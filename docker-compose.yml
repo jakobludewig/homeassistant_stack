@@ -29,7 +29,8 @@ services:
     depends_on:
       - mosquitto
     ports:
-      - "8081:8081"   # frontend (8080 is used by mail-archive)
+      - "8081:8081"
+      - "8082:8080"
     devices:
       - ${ZIGBEE_DEVICE}:/dev/zigbee
     environment:
