@@ -1,0 +1,46 @@
+services:
+  homeassistant:
+    image: ghcr.io/home-assistant/home-assistant:2026.10.4
+    container_name: homeassistant
+    restart: unless-stopped
+    network_mode: host   # needed for device discovery; UI on :8123
+    environment:
+      TZ: ${TZ}
+    volumes:
+      - ${APPDATA}/homeassistant:/config
+    depends_on:
+      - mosquitto
+
+  mosquitto:
+    image: eclipse-mosquitto:2.0.22
+    container_name: mosquitto
+    restart: unless-stopped
+    ports:
+      - "1883:1883"
+    volumes:
+      - ./mosquitto/mosquitto.conf:/mosquitto/config/mosquitto.conf:ro
+      - ${APPDATA}/mosquitto/data:/mosquitto/data
+      - ${APPDATA}/mosquitto/log:/mosquitto/log
+
+  zigbee2mqtt:
+    image: koenkk/zigbee2mqtt:2.14.3
+    container_name: zigbee2mqtt
+    restart: unless-stopped
+    depends_on:
+      - mosquitto
+    ports:
+      - "8081:8081"   # frontend (8080 is used by mail-archive)
+    devices:
+      - ${ZIGBEE_DEVICE}:/dev/zigbee
+    environment:
+      TZ: ${TZ}
+      ZIGBEE2MQTT_DATA: /app/data
+      ZIGBEE2MQTT_CONFIG_MQTT_SERVER: mqtt://mosquitto:1883
+      ZIGBEE2MQTT_CONFIG_SERIAL_PORT: /dev/zigbee
+      ZIGBEE2MQTT_CONFIG_SERIAL_ADAPTER: ${ZIGBEE_ADAPTER}
+      ZIGBEE2MQTT_CONFIG_FRONTEND_ENABLED: "true"
+      ZIGBEE2MQTT_CONFIG_FRONTEND_PORT: "8081"
+      ZIGBEE2MQTT_CONFIG_HOMEASSISTANT_ENABLED: "true"
+    volumes:
+      - ${APPDATA}/zigbee2mqtt:/app/data
+      - /run/udev:/run/udev:ro
