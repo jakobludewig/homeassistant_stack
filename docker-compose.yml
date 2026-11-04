@@ -16,9 +16,10 @@ services:
     container_name: mosquitto
     restart: unless-stopped
     ports:
-      - "1883:1883"
+      - "127.0.0.1:1883:1883"   # only reachable from the server itself (HA runs on the host network)
     volumes:
       - ./mosquitto/mosquitto.conf:/mosquitto/config/mosquitto.conf:ro
+      - ${APPDATA}/mosquitto/auth:/mosquitto/auth:ro   # contains the passwd file, not in git
       - ${APPDATA}/mosquitto/data:/mosquitto/data
       - ${APPDATA}/mosquitto/log:/mosquitto/log
 
@@ -36,10 +37,13 @@ services:
       TZ: ${TZ}
       ZIGBEE2MQTT_DATA: /app/data
       ZIGBEE2MQTT_CONFIG_MQTT_SERVER: mqtt://mosquitto:1883
+      ZIGBEE2MQTT_CONFIG_MQTT_USER: ${Z2M_MQTT_USER:?set Z2M_MQTT_USER in .env}
+      ZIGBEE2MQTT_CONFIG_MQTT_PASSWORD: ${Z2M_MQTT_PASSWORD:?set Z2M_MQTT_PASSWORD in .env}
       ZIGBEE2MQTT_CONFIG_SERIAL_PORT: /dev/zigbee
       ZIGBEE2MQTT_CONFIG_SERIAL_ADAPTER: ${ZIGBEE_ADAPTER}
       ZIGBEE2MQTT_CONFIG_FRONTEND_ENABLED: "true"
       ZIGBEE2MQTT_CONFIG_FRONTEND_PORT: "8081"
+      ZIGBEE2MQTT_CONFIG_FRONTEND_AUTH_TOKEN: ${Z2M_FRONTEND_TOKEN:?set Z2M_FRONTEND_TOKEN in .env}
       ZIGBEE2MQTT_CONFIG_HOMEASSISTANT_ENABLED: "true"
     volumes:
       - ${APPDATA}/zigbee2mqtt:/app/data
